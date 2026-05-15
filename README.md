@@ -10,7 +10,7 @@ FoodFinder is a full-stack restaurant discovery app for Almaty and Astana. Brows
 |---|---|
 | **Frontend** | Next.js 16 (App Router), React 19, Tailwind CSS v4, SWR |
 | **Backend** | Express.js, TypeScript, better-sqlite3 (SQLite) |
-| **AI** | Anthropic Claude (`claude-haiku-4-5`), `@anthropic-ai/sdk`, tool calling |
+| **AI** | OpenAI (`gpt-4o-mini` по умолчанию), `openai` SDK, tool calling, `react-markdown` |
 | **Testing** | Jest + ts-jest + Supertest (API), Playwright (E2E) |
 
 ---
@@ -49,7 +49,9 @@ npm install
 Create a `.env.local` file in the `frontend/` directory:
 
 ```env
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
+NEXT_PUBLIC_API_URL=http://localhost:4000
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4o-mini
 ```
 
 Then start the dev server:
@@ -77,8 +79,10 @@ cd frontend && npm run test:e2e
 
 | Variable | Location | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | `frontend/.env.local` | API key for the Claude AI chatbot |
-| `PORT` | shell / `.env` | Backend port (default: `4000`, set to `3001` for frontend compatibility) |
+| `NEXT_PUBLIC_API_URL` | `frontend/.env.local` | Backend API URL (default: `http://localhost:4000`) |
+| `OPENAI_API_KEY` | `frontend/.env.local` | API key for the OpenAI chatbot |
+| `OPENAI_MODEL` | `frontend/.env.local` | OpenAI model name (default: `gpt-4o-mini`) |
+| `PORT` | shell / `backend/.env` | Backend port (default: `4000`) |
 | `FRONTEND_URL` | `backend/.env` | Allowed CORS origin (default: `http://localhost:3000`) |
 
 ---
@@ -95,22 +99,3 @@ cd frontend && npm run test:e2e
 | `DELETE` | `/cart/:id` | Remove cart item |
 
 ---
-
-## Deploy
-
-| Service | Link |
-|---|---|
-| **Frontend** | [vercel-link] |
-| **Backend** | [railway-link] |
-
----
-
-## Screenshots
-
-> _Screenshots coming soon._
-
-<!-- Add screenshots here once deployed:
-![Home page](docs/screenshots/home.png)
-![Restaurant detail](docs/screenshots/detail.png)
-![AI chatbot](docs/screenshots/chatbot.png)
--->
