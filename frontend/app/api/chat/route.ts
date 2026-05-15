@@ -1,44 +1,51 @@
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const BACKEND = 'http://localhost:3001';
+const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+const MODEL = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
 
-const tools: Anthropic.Tool[] = [
+const tools: OpenAI.Chat.ChatCompletionTool[] = [
   {
-    name: 'search_restaurants',
-    description: 'Search for restaurants by cuisine, price range, or city',
-    input_schema: {
-      type: 'object',
-      properties: {
-        cuisine: {
-          type: 'string',
-          description: 'Cuisine type: kazakh, italian, japanese, fastfood, georgian',
+    type: 'function',
+    function: {
+      name: 'search_restaurants',
+      description: 'Search for restaurants by cuisine, price range, or city',
+      parameters: {
+        type: 'object',
+        properties: {
+          cuisine: {
+            type: 'string',
+            description: 'Cuisine type: kazakh, italian, japanese, fastfood, georgian',
+          },
+          max_price_range: {
+            type: 'number',
+            description: 'Maximum price range (1=cheap, 2=medium, 3=expensive)',
+          },
+          city: {
+            type: 'string',
+            description: 'City name, e.g. Almaty or Astana',
+          },
         },
-        max_price_range: {
-          type: 'number',
-          description: 'Maximum price range (1=cheap, 2=medium, 3=expensive)',
-        },
-        city: {
-          type: 'string',
-          description: 'City name, e.g. Almaty or Astana',
-        },
+        required: [],
       },
-      required: [],
     },
   },
   {
-    name: 'get_menu',
-    description: 'Get the menu for a specific restaurant by its ID',
-    input_schema: {
-      type: 'object',
-      properties: {
-        restaurant_id: {
-          type: 'number',
-          description: 'The restaurant ID',
+    type: 'function',
+    function: {
+      name: 'get_menu',
+      description: 'Get the menu for a specific restaurant by its ID',
+      parameters: {
+        type: 'object',
+        properties: {
+          restaurant_id: {
+            type: 'number',
+            description: 'The restaurant ID',
+          },
         },
+        required: ['restaurant_id'],
       },
-      required: ['restaurant_id'],
     },
   },
 ];
@@ -52,16 +59,13 @@ async function runTool(name: string, input: Record<string, unknown>): Promise<st
     const url = `${BACKEND}/restaurants${params.size ? `?${params}` : ''}`;
     const res = await fetch(url);
     if (!res.ok) return JSON.stringify({ error: 'Failed to fetch restaurants' });
-    const data = await res.json();
-    return JSON.stringify(data);
+    return JSON.stringify(await res.json());
   }
 
   if (name === 'get_menu') {
-    const id = input.restaurant_id;
-    const res = await fetch(`${BACKEND}/restaurants/${id}/menu`);
+    const res = await fetch(`${BACKEND}/restaurants/${input.restaurant_id}/menu`);
     if (!res.ok) return JSON.stringify({ error: 'Failed to fetch menu' });
-    const data = await res.json();
-    return JSON.stringify(data);
+    return JSON.stringify(await res.json());
   }
 
   return JSON.stringify({ error: `Unknown tool: ${name}` });
@@ -77,48 +81,45 @@ export async function POST(request: Request) {
       'Если пользователь просит меню — используй get_menu. ' +
       'Общайся на русском языке. Будь дружелюбным и кратким.';
 
-    const apiMessages: Anthropic.MessageParam[] = messages.map(
-      (m: { role: string; content: string }) => ({
+    const apiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      { role: 'system', content: systemPrompt },
+      ...messages.map((m: { role: string; content: string }) => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
-      })
-    );
+      })),
+    ];
 
-    let response = await client.messages.create({
-      model: 'claude-haiku-4-5',
+    let response = await client.chat.completions.create({
+      model: MODEL,
       max_tokens: 1024,
-      system: systemPrompt,
       tools,
       messages: apiMessages,
     });
 
-    while (response.stop_reason === 'tool_use') {
-      const toolUseBlocks = response.content.filter(
-        (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
-      );
+    while (response.choices[0].finish_reason === 'tool_calls') {
+      const message = response.choices[0].message;
+      apiMessages.push(message);
 
-      const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
-        toolUseBlocks.map(async (block) => ({
-          type: 'tool_result' as const,
-          tool_use_id: block.id,
-          content: await runTool(block.name, block.input as Record<string, unknown>),
+      const toolResults = await Promise.all(
+        (message.tool_calls ?? []).map(async (call) => ({
+          role: 'tool' as const,
+          tool_call_id: call.id,
+          content: await runTool(call.function.name, JSON.parse(call.function.arguments)),
         }))
       );
 
-      apiMessages.push({ role: 'assistant', content: response.content });
-      apiMessages.push({ role: 'user', content: toolResults });
+      apiMessages.push(...toolResults);
 
-      response = await client.messages.create({
-        model: 'claude-haiku-4-5',
+      response = await client.chat.completions.create({
+        model: MODEL,
         max_tokens: 1024,
-        system: systemPrompt,
         tools,
         messages: apiMessages,
       });
     }
 
-    const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
-    const text = textBlock?.text ?? 'Извините, не удалось получить ответ.';
+    const text =
+      response.choices[0].message.content ?? 'Извините, не удалось получить ответ.';
 
     return Response.json({ response: text });
   } catch (err) {
