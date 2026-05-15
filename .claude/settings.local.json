@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout 10 npx tsx src/seed.ts)",
+      "Bash(npx tsc *)",
+      "Bash(npx tsx *)",
+      "Bash(curl -s http://localhost:4000/restaurants)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'{len\\(d\\)} restaurants'\\); [print\\(f'  {r[\\\\\"name\\\\\"]} \\({r[\\\\\"cuisine\\\\\"]}, {r[\\\\\"city\\\\\"]}, pr={r[\\\\\"price_range\\\\\"]}\\)'\\) for r in d]\")",
+      "Bash(curl -s \"http://localhost:4000/restaurants?cuisine=kazakh\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'{len\\(d\\)} kazakh'\\); [print\\(f'  {r[\\\\\"name\\\\\"]}'\\) for r in d]\")",
+      "Bash(curl -s http://localhost:4000/restaurants/1/menu)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(f'  [{cat}]: {[i[\\\\\"name\\\\\"] for i in items]}'\\) for cat,items in d.items\\(\\)]\")",
+      "Bash(curl -s -X POST http://localhost:4000/cart -H \"Content-Type: application/json\" -d '{\"menu_item_id\":1,\"quantity\":2}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d\\)\")",
+      "Bash(curl -s http://localhost:4000/cart)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'{len\\(d\\)} cart items'\\); [print\\(f'  [{i[\\\\\"id\\\\\"]}] {i[\\\\\"item_name\\\\\"]} x{i[\\\\\"quantity\\\\\"]}'\\) for i in d]\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -X DELETE http://localhost:4000/cart/1)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'{len\\(d\\)} cart items'\\)\")",
+      "Bash(kill %1)",
+      "Bash(npm install *)"
+    ]
+  }
+}
