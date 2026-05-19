@@ -104,7 +104,7 @@ export async function POST(request: Request) {
 
       const toolResults = await Promise.all(
         (message.tool_calls ?? [])
-          .filter((call): call is OpenAI.Chat.ChatCompletionMessageToolCall => call.type === 'function')
+          .filter((call): call is OpenAI.Chat.ChatCompletionMessageFunctionToolCall => call.type === 'function')
           .map(async (call) => ({
             role: 'tool' as const,
             tool_call_id: call.id,
