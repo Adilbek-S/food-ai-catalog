@@ -7,14 +7,7 @@ import './seed';
 
 const app = express();
 
-const allowedOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:3000')
-  .split(',')
-  .map((o) => o.trim());
-
-app.use(cors({ origin: (origin, cb) => {
-  if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-  cb(new Error(`CORS: origin ${origin} not allowed`));
-}}));
+app.use(cors({ origin: process.env.FRONTEND_URL ?? 'http://localhost:3000' }));
 app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
