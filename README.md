@@ -99,3 +99,12 @@ cd frontend && npm run test:e2e
 | `DELETE` | `/cart/:id` | Remove cart item |
 
 ---
+
+## Deploy
+
+| Service | Link |
+|---|---|
+| **Frontend** | [food-ai-catalog.vercel.app](https://food-ai-catalog.vercel.app) |
+| **Backend** | [food-ai-catalog.up.railway.app](https://food-ai-catalog.up.railway.app) |
+
+---
